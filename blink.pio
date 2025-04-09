@@ -1,0 +1,42 @@
+;
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
+;
+; SPDX-License-Identifier: BSD-3-Clause
+;
+.pio_version 0
+; SET pin 0 should be mapped to your LED GPIO
+
+.program blink
+
+.wrap_target
+    pull block
+    out pins, 10 [2]
+    set pins, 0 [1]
+    out pins, 10 [2]
+    set pins, 1 
+.wrap             ; Blink forever!
+
+
+% c-sdk {
+// this is a raw helper function for use by the user which sets up the GPIO output, and configures the SM to output on a particular pin
+
+void blink_program_init(PIO pio, uint sm, uint offset, uint datapin, uint clkpin) {
+   //pio_gpio_init(pio, pin);
+   //pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, datapin, 10, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, clkpin, 1, true);
+    for (int i = 0; i < 10; i++) {
+        pio_gpio_init(pio, datapin + i);
+        gpio_pull_up(datapin + i);
+    }
+    pio_gpio_init(pio, clkpin);
+    gpio_pull_up(clkpin);
+    
+    
+   pio_sm_config c = blink_program_get_default_config(offset);
+   //sm_config_set_out_shift(&c, true, true, 32);
+   sm_config_set_out_pins(&c, datapin, 10);
+   sm_config_set_set_pins(&c, clkpin, 1);
+   pio_sm_init(pio, sm, offset, &c);
+}
+%}
